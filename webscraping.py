@@ -5,6 +5,8 @@ import argparse
 import urllib3
 import sys
 from pprint import pp
+import pandas as pd
+import matplotlib.pyplot as plt
 
 def read_user_cli_args():
     parser = argparse.ArgumentParser(
@@ -39,7 +41,7 @@ def build_weather_query(city, imperial=False):
     }
     return query_params
     
-def make_api_req(query_params):
+def search_weather_by_city(query_params):
     base_url = "https://api.openweathermap.org/data/2.5/weather"
     
     try:
@@ -51,20 +53,42 @@ def make_api_req(query_params):
         sys.exit("Can't find data for this city... Did you forget space?")
     except error as e:
         sys.exit("Other error occurred ... ")
-        
-    
     return dict
 
+def search_forecast_by_city(query_params):
+    base_url = "https://api.openweathermap.org/data/2.5/forecast"
+    try:
+        r = requests.get(base_url, query_params)
+        r.raise_for_status()
+        dict = r.json()
+    except HTTPError as http_err:
+        sys.exit("Error occurred. Can't find the data for this city...")
+    return dict
 
+def visualize_data(df, cityname):
+    plt.figure(figsize=(10,6))
+    plt.plot(df['Date'], df['Temperature (Celsius)'], marker = 'o', linestyle='-')
+    plt.xlabel("Date and Time")
+    plt.ylabel("Temperature (Celsius)")
+    plt.title(f"Temperature Trends in {cityname}")
+    plt.xticks(rotation=45)
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+    plt.savefig('output.png')
 
 if __name__ == "__main__":
     user_args = read_user_cli_args()
-    #make_api_req_to_weather(user_args.city, user_args.imperial)
-    
     q_params = build_weather_query(user_args.city, user_args.imperial)
-    d = make_api_req(q_params)
-    temp = "F" if user_args.imperial else "C"
-    print(f"{d['name']}: "
-          f"{d['weather'][0]['description']}"
-          f" ({d['main']['temp']} {temp})"
-          )
+    #d = search_weather_by_city(q_params)
+    r = search_forecast_by_city(q_params)
+    data = []
+    # extract the relevant data here.
+    for item in r["list"]:
+        data.append({
+            "Date":item["dt_txt"],
+            "Temperature (Celsius)": item["main"]["temp"]
+        })
+    df = pd.DataFrame(data)
+    visualize_data(df, " ".join(user_args.city))
+    
