@@ -4,7 +4,7 @@ from configparser import ConfigParser
 import argparse
 import urllib3
 import sys
-from pprint import pp
+from pprint import pprint
 import pandas as pd
 import matplotlib.pyplot as plt
 
